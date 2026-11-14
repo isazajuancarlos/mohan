@@ -1,0 +1,12 @@
+Mohán — oráculo adversario de implementaciones PQC de terceros
+Copyright (c) 2026 Juan Carlos Isaza
+
+SPDX-License-Identifier: LicenseRef-Propietario
+
+Titular de los derechos: Juan Carlos Isaza (Medellín, Colombia).
+"Xiliux" es una marca de software; no es una persona jurídica.
+
+Dependencias de terceros (no derivadas; consumidas como librería):
+- fips204 (Apache-2.0 OR MIT) © Eric Schorn / Integrity Chain — implementación de
+  referencia de ML-DSA (FIPS 204) usada como adaptador de contraste. Su licencia
+  acompaña a la distribución del crate.

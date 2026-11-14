@@ -1,0 +1,4 @@
+/target
+# Fuente de TERCEROS clonada para diferenciar (NO se vendoriza en el repo propietario).
+# Cada objetivo se re-clona desde su origen con el SHA anotado en su adaptador (D31).
+/objetivos/

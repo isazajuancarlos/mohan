@@ -1,0 +1,51 @@
+# SPDX-License-Identifier: LicenseRef-Propietario
+# Autor/titular: Juan Carlos Isaza (Xiliux no es persona jurídica). Proyecto: Mohán.
+[package]
+name = "mohan"
+version = "0.1.0"
+edition = "2024"
+license = "LicenseRef-Propietario"
+authors = ["Juan Carlos Isaza"]
+description = "Oráculo adversario de implementaciones PQC de terceros (diferencial + conformidad). v0: ML-DSA/FIPS 204."
+
+[dependencies]
+fips204 = "0.4"
+fips203 = "0.4"  # referencia ML-KEM (FIPS 203) para el oraculo hibrido v2
+rand_core = "0.6"  # RngCore-semilla para encaps determinista (reproducibilidad, D30)
+# OBJETIVO 1 (tercero bajo diferencial): isomoes/ml-dsa-rs @ e7d4379 — reimplementación
+# ML-DSA independiente "basada en la estructura" de RustCrypto (NO un fork). Clonado en
+# `objetivos/` (gitignored, no vendorizado). Sin las features que no usamos (rand_core/
+# pkcs8): el adaptador solo necesita keygen-desde-semilla, sign_internal y verify.
+mldsa_isomoes = { package = "ml-dsa", path = "objetivos/ml-dsa-rs", default-features = false }
+# OBJETIVO 2: QuantumDrizzy/Bastion @ 052496028 — ML-DSA-65 from-scratch sobre Keccak
+# PROPIO (mayor probabilidad de bug), API byte-native, CON SECURITY.md (canal limpio).
+# Sin `rand` (no usamos keygen OS-CSPRNG); `std` para detección AVX2 en runtime.
+bastion = { path = "objetivos/Bastion", default-features = false, features = ["std"] }
+# OBJETIVO HÍBRIDO 1: hackerbirds/x-wing-rust @ 2b4e67a — combinador X-Wing (X25519+
+# ML-KEM-768, draft IETF). Delgado sobre ml-kem+x25519-dalek auditados; el bug vive en
+# el combinador (SHA3-256) y la serialización. ⭐0, sin SECURITY.md.
+# `risky_api`: la API sin estado XWing (reusar clave es "riesgoso" en prod pero es
+# justo lo determinista que el oráculo necesita). `serialize_secret_key`: to/from_bytes.
+x_wing = { package = "x-wing", path = "objetivos/x-wing-rust", features = ["risky_api", "serialize_secret_key"] }
+# OBJETIVO AEAD 1: cemisj/easylock @ b662da2 — AEAD "roll-your-own" (ChaCha20, Poly1305,
+# AES, GHASH propios, cero deps). CON SECURITY.md. El Poly1305/GHASH a mano casi siempre
+# diverge en algún borde. Referencias auditadas para el diferencial:
+easylock-core = { path = "objetivos/easylock/crates/easylock-core" }
+chacha20poly1305 = "0.10"
+aes-gcm = "0.10"
+# OBJETIVO 5 (HILO 3 — "cazar los que pagan"): theQRL/rust-qrllib — ML-DSA-87
+# from-scratch, ToB-auditado, firma DETERMINISTA disponible (rnd=0). Adaptador
+# NATIVO para el diferencial de 3 vías fips204↔rust-qrllib↔go-qrllib(CLI). QRL
+# tiene bounty standing (theqrl.org/bug-bounty). Clonado en objetivos/qrl/ (gitignored).
+qrllib = { path = "objetivos/qrl/rust-qrllib/crates/qrllib" }
+
+# Dependencias optimizadas también en debug (estándar de nacimiento). Rinde el día
+# que entre un KDF/firma pesada; cuesta cero mientras tanto.
+[profile.dev.package."*"]
+opt-level = 3
+
+# PUERTA de buenas prácticas (no aviso): el CI corre -D warnings. Solo entra lo que
+# se está dispuesto a BLOQUEAR y que `cargo clippy --fix` limpia a cero.
+[lints.clippy]
+redundant_clone = "deny"
+needless_collect = "deny"
